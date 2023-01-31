@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const path = require("path");
 
 // configuration
 var app = express();
@@ -50,6 +51,11 @@ const customerSchema = new mongoose.Schema({
 const customerModel = mongoose.model("Customers", customerSchema);
 
 // ------------------------------------ API -----------------------------
+
+// sendFile will go here
+app.get("/", function (req, res) {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 app.get("/getAllCustomers", async function (req, res) {
   try {
