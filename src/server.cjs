@@ -30,45 +30,60 @@ database.once("connected", () => {
   console.log("Database Connected");
 });
 
-
-const meetingSchema = new mongoose.Schema({
-  name: {
-    required: true,
-    type: String,
-  },
+const userSchema = new mongoose.Schema({
   email: {
     required: true,
     type: String,
-    unique: true,
-    lowercase: true,
   },
-  age: {
+  avatar: {
+    type: String
+  },
+  name : {
+    type: String
+  }
+})
+
+const meetingSchema = new mongoose.Schema({
+  id: {
     required: true,
-    type: Number,
+    type: String,
+    unique : true
   },
+  host: {
+    type : String,
+    required: true, 
+  },
+  users:[userSchema],
+  startTime: {
+    type: Date,
+  },
+  endTime: Date,
+  messages: [{body: String, timeStamp: Date}]
 });
-const customerModel = mongoose.model("Meeting", meetingSchema);
+
+const userModel = mongoose.model("User", userSchema);
+const meetingModel = mongoose.model("Meeting", meetingSchema);
 
 // ------------------------------------ API -----------------------------
 
 // sendFile will go here
 app.get("/", function (req, res) {
-  res.sendFile(path.join(__dirname, "index.html"));
+  
 });
 
-app.get("/getAllCustomers", async function (req, res) {
+app.get("/getAllMeetings", async function (req, res) {
   try {
-    const data = await customerModel.find();
+    const data = await meetingModel.find({ host: req.query.hostId });
     res.json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-app.get("/getCustomer", async function (req, res) {
+app.get("/getMeeting", async function (req, res) {
   try {
-    const data = await customerModel.find({
-      email: req.query.email,
+    const data = await meetingModel.find({
+      id: req.query.meetingId,
     });
     res.json(data);
   } catch (error) {
@@ -76,25 +91,34 @@ app.get("/getCustomer", async function (req, res) {
   }
 });
 
-app.post("/saveCustomer", async function (req, res) {
-  let { name, email, age } = req.body;
-  let customer = new customerModel({
+// delete all records for a specific host
+app.delete("/deleteAll", async function (req, res) {
+  try {
+    const data = await meetingModel.deleteMany({host : req.query.hostId})
+  } catch (error) {
+    
+  }
+})
+
+app.post("/saveUser", async function (req, res) {
+  let { email, avatar, name } = req.body;
+  let user = new userModel({
     name: name,
     email: email,
-    age: age,
+    avatar: avatar,
   });
   try {
-    const dataToSave = await customer.save();
+    const dataToSave = await user.save();
     res.status(200).json(dataToSave);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-app.delete("/delCustomer", async function (req, res) {
+app.delete("/delUser", async function (req, res) {
   try {
-    const dataToBeDeleted = await customerModel.findOneAndRemove({
-      email: req.query.email,
+    const dataToBeDeleted = await userModel.findOneAndRemove({
+      email: req.body.email,
     });
     res.status(200).json(dataToBeDeleted);
   } catch (error) {
