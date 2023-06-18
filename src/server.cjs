@@ -2,15 +2,21 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const path = require("path");
+const cors = require("cors");
 
 // configuration
 var app = express();
 app.use(express.json());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 dotenv.config();
 
 const mongoString = process.env.DATABASE_URL;
 const hostname = "127.0.0.1";
-const port = 3000;
+const port = 6500;
 
 app.listen(port, function () {
   console.log("Express-App listening at http://%s:%s", hostname, port);
@@ -31,7 +37,7 @@ database.once("connected", () => {
 });
 
 const userSchema = new mongoose.Schema({
-  email: {
+  _id: {
     required: true,
     type: String,
   },
@@ -44,7 +50,7 @@ const userSchema = new mongoose.Schema({
 });
 
 const meetingSchema = new mongoose.Schema({
-  id: {
+  peerId: {
     required: true,
     type: String,
     unique: true,
@@ -53,12 +59,12 @@ const meetingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  users: [userSchema],
+  users: [{ type: userSchema }],
   startTime: {
     type: Date,
   },
   endTime: Date,
-  messages: [{ body: String, timeStamp: Date }],
+  messages: [{ type: mongoose.Schema.Types.Mixed }],
 });
 
 const userModel = mongoose.model("User", userSchema);
@@ -68,6 +74,7 @@ const meetingModel = mongoose.model("Meeting", meetingSchema);
 
 app.post("/save/meeting", async function (req, res) {
   try {
+    console.log("req awa");
     let user = new meetingModel(req.body);
     const dataToSave = await user.save();
     res.status(200).json(dataToSave);
@@ -110,14 +117,16 @@ app.delete("/delAll/meeting", async function (req, res) {
 
 app.post("/save/user", async function (req, res) {
   try {
-    let { email, avatar, name } = req.body;
-    let user = new userModel({
-      name: name,
-      email: email,
-      avatar: avatar,
-    });
-    const dataToSave = await user.save();
-    res.status(200).json(dataToSave);
+    console.log("user-save ekt awaaaa");
+    // search if exists
+    let user = new userModel(req.body);
+    let result = await userModel.findById(req.body._id).exec();
+    console.log(result);
+    if (result == null) {
+      user.save(req.body).then((res) => {
+        res.status(200).json({ message: "succesull!", data: res.data });
+      });
+    }
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
